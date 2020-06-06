@@ -1,0 +1,39 @@
+extends KinematicBody2D
+
+
+# Declare member variables here. Examples:
+var distance = 20
+var too_close = .15
+var velocity = Vector2()
+var speed = 10
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	get_node("Timer").connect("timeout",self,"despawn")
+
+func despawn():
+	queue_free()
+
+func get_closest():
+	var targets = get_tree().get_nodes_in_group("Allies")
+	if targets.size() > 0:
+		var furthest = get_tree().get_nodes_in_group("Allies")[0]
+		
+		for target in targets:
+			if (target.position - Vector2(0,8)).distance_to(position) <= distance and target.unit_offset > furthest.unit_offset:
+				furthest = target
+		
+		if (furthest.position - Vector2(0,8)).distance_to(position) <= too_close:
+			furthest.get_child(1).value -= 5
+			if furthest.get_child(1).value <= 0:
+				furthest.queue_free()
+			queue_free()
+		elif (furthest.position - Vector2(0,8)).distance_to(position) <= distance:
+			return furthest
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	var target = get_closest()
+	if target != null:
+		velocity = (target.position - Vector2(0,8) - position).normalized()
+	move_and_slide(velocity * speed)
