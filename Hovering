@@ -1,0 +1,17 @@
+extends Sprite
+
+
+# Declare member variables here. Examples:
+var origin = position
+var key = 0
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pass # Replace with function body.
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	position = origin + Vector2(0,sin(key))
+	self_modulate = Color(1,1,1,.7 - sin(key) * .1)
+	key += .02
