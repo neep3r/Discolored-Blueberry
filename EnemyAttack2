@@ -1,0 +1,57 @@
+extends AnimatedSprite
+
+
+# Declare member variables here. Examples:=
+var distance = 70
+var debounce = false
+var debounce2 = false
+var projectile = preload("res://Projectile.tscn").instance()
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pass
+
+func get_closest():
+	var targets = get_tree().get_nodes_in_group("Allies")
+	if targets.size() > 0:
+		var furthest = get_tree().get_nodes_in_group("Allies")[0]
+		
+		for target in targets:
+			if target.position.distance_to(position) <= distance and target.unit_offset >= furthest.unit_offset:
+				furthest = target
+		
+		if furthest.position.distance_to(position) <= distance:
+			return furthest
+
+func tick():
+	var target = get_closest()
+	if target != null:
+		
+		if target.position.x - 4 > position.x and flip_h == true:
+			flip_h = false
+		elif target.position.x + 4 < position.x and flip_h == false:
+			flip_h = true
+		
+		animation = "RightAttack"
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	if get_parent().visible == true:
+		if animation == "RightAttack":
+			var target = get_closest()
+			if frame == 3 and debounce2 == false and target != null:
+				debounce2 = true
+				var fired = projectile.duplicate()
+				fired.position = position - Vector2(0,8)
+				get_node("/root/Node2D").add_child(fired)
+				fired.velocity = (target.position - Vector2(0,8) - position).normalized()
+				fired.speed = 50
+			elif frame >= 12:
+				animation = "Right"
+		elif frame == 3:
+			if debounce == false:
+				debounce = true
+				tick()
+		else:
+			debounce = false
+			debounce2 = false
