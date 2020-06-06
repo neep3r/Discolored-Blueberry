@@ -1,0 +1,129 @@
+extends KinematicBody2D
+
+# Declare member variables here. Examples:
+var playable = true
+var pickables
+var checker
+var picked
+var mushally = preload("res://MushroomAlly.tscn").instance()
+var shadeally = preload("res://NightshadeAlly.tscn").instance()
+var dandyally = preload("res://DandelionAlly.tscn").instance()
+
+var weights = {
+	"Mushroom" : 1.2,
+	"Nightshade" : .9,
+	"Dandelion" : 0
+}
+
+var Conversions = {
+	"Mushroom" : mushally,
+	"Nightshade" : shadeally,
+	"Dandelion" : dandyally
+}
+var weight = 0
+var offset = 25
+var velocity = Vector2()
+var momentum = 0
+var speed = 1.5
+var height = 50
+var limit = 260 #260
+var stage = 1
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pickables = get_tree().get_nodes_in_group("Pickables")
+	checker = PathFollow2D.new()
+	checker.set_name("Checker")
+	get_node("/root/Node2D/Goop" + str(stage) + "/Path").add_child(checker)
+	
+	get_node("Timer").connect("timeout",self,"pathcheck")
+
+func pathcheck():
+	if height <= 10:
+		if picked != null and checker != null:
+			for count in range(0,limit):
+				var off = count / 1000.0
+				checker.unit_offset = off
+				if (checker.global_position - global_position).length() <= 10 and picked != null:
+					var new = Conversions[picked.name].duplicate()
+					new.add_to_group("Allies")
+					weight = 0
+					get_node("/root/Node2D/Goop" + str(stage) + "/Path").add_child(new)
+					new.unit_offset = off
+					picked.queue_free()
+					picked = null
+					return
+		else:
+			for pick in pickables:
+				if (pick.global_position - global_position).length() <= 10:
+					picked = pick.duplicate()
+					picked.show_behind_parent = true
+					picked.position = Vector2(0,150)
+					picked.scale *= Vector2(10,10)
+					weight = weights[picked.name]
+					get_node("AnimatedSprite").add_child(picked)
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	if get_node("/root/Node2D/Goop" + str(stage)).visible == false:
+		if stage < 3:
+			for ally in get_node("/root/Node2D/Goop" + str(stage) + "/Path").get_children():
+				ally.queue_free()
+			
+			stage += 1
+			if stage == 2:
+				limit = 510
+			elif stage == 3:
+				limit = 720
+			if stage == 2 or stage == 3:
+				checker.queue_free()
+				checker = PathFollow2D.new()
+				checker.set_name("Checker")
+				get_node("/root/Node2D/Goop" + str(stage) + "/Path").add_child(checker)
+			else:
+				pass
+		else:
+			playable = false
+	
+	if playable == true:
+		var direction = get_global_mouse_position() - position
+		if direction.length() > 1:
+			if momentum < 1:
+				momentum += .003
+				if momentum > 1:
+					momentum = 1
+			if speed - weight >= 0:
+				velocity = velocity * .985 + direction.normalized() * momentum * (speed - weight)
+			else:
+				velocity = velocity / 2
+			get_node("AnimatedSprite").rotation_degrees = velocity.x * (weight * .5 + .1)
+			get_node("AnimatedSprite").position = Vector2(get_node("AnimatedSprite").rotation_degrees * .1,get_node("AnimatedSprite").position.y)
+			move_and_slide(velocity)
+		else:
+			momentum -= momentum / 2
+			velocity = Vector2()
+		
+		if Input.is_action_pressed("swoop_grab"):
+			if height > 10:
+				height -= 1
+				speed -= .015
+				get_node("AnimatedSprite").position += Vector2(0,.2)
+		else:
+			if height < 50:
+				height += 1
+				speed += .015
+				get_node("AnimatedSprite").position -= Vector2(0,.2)
+				get_node("AnimatedSprite").animation = "HeavyFlapping"
+			else:
+				get_node("AnimatedSprite").animation = "Flapping"
+	else:
+		if (Vector2(0,0) - position * Vector2(1,0)).length() > 1:
+			move_and_slide((Vector2(0,0) - position).normalized() * 20)
+		elif get_node("AnimatedSprite").position.y < -12:
+			get_node("AnimatedSprite").position += Vector2(0,.1)
+			get_node("AnimatedSprite").speed_scale -= .009
+			rotation_degrees = 0
+		else:
+			get_node("AnimatedSprite").animation = "Sleep"
+			if get_node("/root/Node2D/Fin").self_modulate.a < 1:
+				get_node("/root/Node2D/Fin").self_modulate += Color(0,0,0,.01)
