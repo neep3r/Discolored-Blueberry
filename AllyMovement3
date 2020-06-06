@@ -1,0 +1,32 @@
+extends PathFollow2D
+
+# Declare member variables here. Examples:
+var speed = 10
+var prev = Vector2(position)
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	get_node("Timer").connect("timeout",self,"opacitychange")
+	
+func opacitychange():
+	if unit_offset >= 1:
+		if get_parent().get_parent().modulate.a <= 0:
+			get_parent().get_parent().visible = false
+			queue_free()
+		else:
+			get_parent().get_parent().modulate += Color(0,0,0,-.1)
+			if get_parent().get_parent().name == "Goop3":
+				get_node("/root/Node2D/Allies").modulate += Color(0,0,0,-.1)
+				var enemies = get_tree().get_nodes_in_group("Enemies")
+				for enemy in enemies:
+					enemy.modulate += Color(0,0,0,-.1)
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	if get_parent().name == "Path":
+		offset += speed * delta
+		if prev.x - .02 > position.x:
+			get_node("AnimatedSprite").flip_h = false
+		elif prev.x + .02 < position.x:
+			get_node("AnimatedSprite").flip_h = true
+		prev = position
