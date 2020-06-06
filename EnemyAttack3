@@ -1,0 +1,57 @@
+extends AnimatedSprite
+
+
+# Declare member variables here. Examples:=
+var distance = 6
+var count = 0
+var debounce = false
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	pass
+
+func get_closest():
+	var targets = get_tree().get_nodes_in_group("Allies")
+	if targets.size() > 0:
+		var nearest = get_tree().get_nodes_in_group("Allies")[0]
+	
+		for target in targets:
+			if target.position.distance_to(position) < nearest.position.distance_to(position):
+				nearest = target
+		
+		if nearest.position.distance_to(position) <= distance and not "DandelionAlly" in nearest.name:
+			print(nearest.name)
+			return nearest
+
+func tick():
+	var target = get_closest()
+	if target != null:
+		animation = "Attack"
+		
+		if target.position.x - 4 > position.x and flip_h == true:
+			flip_h = false
+		elif target.position.x + 4 < position.x and flip_h == false:
+			flip_h = true
+		
+		if target.get_child(1).value <= get_node("Healthbar").value:
+			get_node("Healthbar").value -= target.get_child(1).value
+			target.queue_free()
+			if get_node("Healthbar").value <= 0:
+				queue_free()
+		else:
+			target.get_child(1).value -= get_node("Healthbar").value
+			queue_free()
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	if get_parent().visible == true:
+		if frame == 3:
+			if debounce == false:
+				debounce = true
+				count += 1
+				if count == 4:
+					animation = "Idle"
+					count = 0
+		else:
+			debounce = false
+		tick()
