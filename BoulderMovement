@@ -1,0 +1,33 @@
+extends KinematicBody2D
+
+
+# Declare member variables here. Examples:
+var too_close = 6
+var velocity = Vector2()
+var speed = 60
+var hitallies = {}
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	get_node("Timer").connect("timeout",self,"despawn")
+
+func despawn():
+	queue_free()
+
+func tick():
+	var targets = get_tree().get_nodes_in_group("Allies")
+	if targets.size() > 0:
+		
+		for target in targets:
+			if (target.position - Vector2(0,8)).distance_to(position) <= too_close:
+				if hitallies.has(target) == false:
+					hitallies[target] = true
+					target.get_child(1).value -= 20
+					if target.get_child(1).value <= 0:
+						target.queue_free()
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	move_and_slide(velocity * speed)
+	rotation_degrees += velocity.x * 2
+	tick()
