@@ -1,0 +1,42 @@
+extends AnimatedSprite
+
+
+# Declare member variables here. Examples:=
+var distance = 70
+var projectile = preload("res://Boulder.tscn").instance()
+
+# Called when the node enters the scene tree for the first time.
+func _ready():
+	get_node("Timer").connect("timeout",self,"tick")
+
+func get_closest():
+	var targets = get_tree().get_nodes_in_group("Allies")
+	if targets.size() > 0:
+		var furthest = get_tree().get_nodes_in_group("Allies")[0]
+		
+		for target in targets:
+			if target.position.distance_to(position) <= distance and target.unit_offset >= furthest.unit_offset:
+				furthest = target
+		
+		if furthest.position.distance_to(position) <= distance and not "DandelionAlly" in furthest.name:
+			return furthest
+
+func tick():
+	if get_parent().visible == true:
+		var target = get_closest()
+		if target != null:
+			
+			if target.position.x < position.x and flip_h == true:
+				flip_h = false
+			elif target.position.x > position.x and flip_h == false:
+				flip_h = true
+			
+			var fired = projectile.duplicate()
+			fired.position = position
+			get_node("/root/Node2D").add_child(fired)
+			fired.velocity = (target.position * Vector2(1,0) - position * Vector2(1,0)).normalized()
+			fired.speed = 60
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta):
+	pass
